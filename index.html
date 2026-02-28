@@ -2,35 +2,9 @@
 <html>
 <head>
   <title>Multiplayer Game with Leaderboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    
-    #auth-container { background: #34495e; padding: 30px; border-radius: 10px; text-align: center; width: 300px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-    .form-group { margin-bottom: 15px; }
-    input { width: 90%; padding: 10px; margin-top: 5px; border-radius: 5px; border: none; font-size: 14px; }
-    button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-    button:hover { background: #2980b9; }
-    #toggle-auth { color: #f1c40f; cursor: pointer; font-size: 13px; margin-top: 15px; display: block; text-decoration: underline; }
-    
-    #game-container { display: none; text-align: center; position: relative; }
-    canvas { background: #ecf0f1; border: 4px solid #34495e; border-radius: 10px; margin-top: 10px; }
-    
-    /* Button para sa Logout */
-    #logout-btn { position: absolute; top: -50px; right: 0; width: 100px; padding: 10px; background: #e74c3c; border-radius: 5px; font-size: 14px; }
-    #logout-btn:hover { background: #c0392b; }
-
-    #leaderboard-panel {
-      position: absolute; top: 10px; right: -220px; width: 180px;
-      background: #34495e; padding: 15px; border-radius: 10px;
-      border: 2px solid #f1c40f; text-align: left;
-    }
-    #leaderboard-panel h3 { margin: 0 0 10px 0; color: #f1c40f; text-align: center; }
-    #leaderboard-list { list-style: none; padding: 0; margin: 0; }
-    #leaderboard-list li { margin-bottom: 5px; font-size: 14px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px; }
-  </style>
+  <link rel="stylesheet" href="./style-1.css">
 </head>
 <body>
-
   <div id="auth-container">
     <h2 id="auth-title">Login to Play</h2>
     <form id="auth-form">
@@ -54,107 +28,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    
-    const authContainer = document.getElementById('auth-container');
-    const gameContainer = document.getElementById('game-container');
-    const authForm = document.getElementById('auth-form');
-    const toggleAuth = document.getElementById('toggle-auth');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const leaderboardList = document.getElementById('leaderboard-list');
-    const logoutBtn = document.getElementById('logout-btn');
-    
-    let isLoginMode = true; 
-
-    // --- CHECK LOCAL STORAGE ON PAGE LOAD ---
-    const savedUser = localStorage.getItem('game_session');
-    if (savedUser) {
-      // Kung may naka-save sa storage, i-bypass ang login screen at padalhan ang server ng signal
-      socket.emit('autoLogin', savedUser);
-    }
-
-    // --- LOGOUT FUNCTION ---
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('game_session'); // Burahin ang session
-      location.reload(); // I-refresh ang page para bumalik sa Login screen
-    });
-
-    socket.on('force_logout', () => {
-      localStorage.removeItem('game_session');
-      location.reload();
-    });
-
-    // --- REGULAR UI TOGGLES ---
-    toggleAuth.addEventListener('click', () => {
-      isLoginMode = !isLoginMode;
-      document.getElementById('auth-title').innerText = isLoginMode ? "Login to Play" : "Create an Account";
-      document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Register";
-      toggleAuth.innerText = isLoginMode ? "Wala pang account? Mag-Register dito." : "May account na? Mag-Login dito.";
-    });
-
-    authForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (isLoginMode) socket.emit('login', { username: usernameInput.value, password: passwordInput.value });
-      else socket.emit('register', { username: usernameInput.value, password: passwordInput.value });
-    });
-
-    socket.on('register_success', (msg) => { alert(msg); toggleAuth.click(); passwordInput.value = ''; });
-    socket.on('register_error', (msg) => alert('Error: ' + msg));
-    socket.on('login_error', (msg) => alert('Error: ' + msg));
-
-    socket.on('updateLeaderboard', (topPlayers) => {
-      leaderboardList.innerHTML = ''; 
-      topPlayers.forEach((player, index) => {
-        const li = document.createElement('li');
-        li.innerText = `${index + 1}. ${player.username} - ${player.wins} Wins`;
-        leaderboardList.appendChild(li);
-      });
-    });
-
-    socket.on('gameAnnouncement', (msg) => { setTimeout(() => alert(msg), 100); });
-
-    // --- SUCCESSFUL LOGIN (Mula man sa Form o AutoLogin) ---
-    socket.on('login_success', (username) => {
-      // I-SAVE SA LOCAL STORAGE ANG USERNAME
-      localStorage.setItem('game_session', username);
-
-      authContainer.style.display = 'none';
-      gameContainer.style.display = 'inline-block'; 
-
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext('2d');
-      let currentFood = {};
-
-      socket.on('updateFood', (newFood) => { currentFood = newFood; });
-
-      socket.on('updatePlayers', (players) => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (currentFood.x !== undefined) {
-          ctx.fillStyle = '#f1c40f';
-          ctx.fillRect(currentFood.x, currentFood.y, 25, 25);
-        }
-
-        for (let id in players) {
-          let player = players[id];
-          ctx.fillStyle = (id === socket.id) ? '#3498db' : '#e74c3c';
-          ctx.fillRect(player.x, player.y, 25, 25);
-          ctx.fillStyle = 'black';
-          ctx.font = 'bold 12px Arial';
-          ctx.fillText(`${player.username} (${player.score})`, player.x - 10, player.y - 8);
-        }
-      });
-
-      // Keyboard movement logic
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'ArrowUp' || event.key === 'w') socket.emit('move', 'up');
-        if (event.key === 'ArrowDown' || event.key === 's') socket.emit('move', 'down');
-        if (event.key === 'ArrowLeft' || event.key === 'a') socket.emit('move', 'left');
-        if (event.key === 'ArrowRight' || event.key === 'd') socket.emit('move', 'right');
-      });
-    });
+  <script src="./local-func-main.js">
   </script>
 </body>
 </html>
