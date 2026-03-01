@@ -11,6 +11,20 @@ const db = new sqlite3.Database('./game.db', (err) => {
 });
 
 
+// classes
+class player {
+    velocity_x = 0;
+    velocity_y = 0;
+
+    constructor (x, y, score, name) {
+        this.x = x;
+        this.y = y;
+        this.score = score;
+        this.username = name;
+    }
+}
+
+
 // Dinagdag natin ang 'wins' column
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,12 +94,14 @@ io.on('connection', (socket) => {
 
       const match = await bcrypt.compare(password, row.password);
       if (match) {
+        players[socket.id] = new player((Math.floor(Math.random() * 400) + 50), (Math.floor(Math.random() * 400) + 50), 0, username);
+        /*
         players[socket.id] = {
           x: Math.floor(Math.random() * 400) + 50,
           y: Math.floor(Math.random() * 400) + 50,
           score: 0,
           username: username
-        };
+        };*/
 
         // INUPDATE: Ipapasa na natin ang username pabalik para mai-save ng browser sa LocalStorage
         socket.emit('login_success', username); 
@@ -105,12 +121,13 @@ io.on('connection', (socket) => {
     db.get(sql, [username], (err, row) => {
       // Kung may nahanap na user sa database
       if (!err && row) {
-        players[socket.id] = {
+        players[socket.id] = new player((Math.floor(Math.random() * 400) + 50), (Math.floor(Math.random() * 400) + 50), 0, username);
+        /*players[socket.id] = {
           x: Math.floor(Math.random() * 400) + 50,
           y: Math.floor(Math.random() * 400) + 50,
           score: 0,
           username: username
-        };
+        };*/
 
         socket.emit('login_success', username);
         io.emit('updatePlayers', players);
@@ -127,10 +144,11 @@ io.on('connection', (socket) => {
     if (!players[socket.id]) return; 
 
     const speed = 4; // 10 
+    const jump = 4;
     const maxPos = canvasSize - playerSize;
     let player = players[socket.id];
 
-    if (direction === 'up' && player.y - speed >= 0) player.y -= speed;
+    if (direction === 'up' && player.y - speed >= 0){ player.y -= 2; player.velocity_y = -jump; }
     if (direction === 'down' && player.y + speed <= maxPos) player.y += speed;
     if (direction === 'left' && player.x - speed >= 0) player.x -= speed;
     if (direction === 'right' && player.x + speed <= maxPos) player.x += speed;
@@ -172,6 +190,21 @@ io.on('connection', (socket) => {
   });
 });
 
+let gravity = 1;
+const updatePhysics = () => {
+    //Gravity
+    for (let id in players) {
+        if (players[id].y < canvasSize-25) players[id].velocity_y += gravity;
+        else { players[id].velocity_y = 0; players[id].y = canvasSize - 25; }
+        players[id].y += players[id].velocity_y;
+        players[id].x += players[id].velocity_x;
+        io.emit('updatePlayers', players);
+    }
+};
+
+setInterval(() => {
+    updatePhysics();
+}, 20);
 // Pinanatili ko ang Port 5000 mo
 http.listen(5000, () => {
   console.log('Game Server is running on http://localhost:5000');
