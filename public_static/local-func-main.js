@@ -10,9 +10,10 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const logoutBtn = document.getElementById('logout-btn');
 const canvas = document.getElementById('gameCanvas');
 
-let isLoginMode = true; 
+let isLoginMode;
 let players;
 let currentFood = {};
+let isInGame = false;
 
 // --- CHECK LOCAL STORAGE ON PAGE LOAD ---
 const savedUser = localStorage.getItem('game_session');
@@ -59,12 +60,18 @@ socket.on('updateLeaderboard', (topPlayers) => {
   });
 });
 
-socket.on('gameAnnouncement', (msg) => { setTimeout(() => alert(msg), 100); });
+socket.on('gameAnnouncement', (msg) => { 
+    let isLogged = localStorage.getItem('is_logged_in');
+    if (isLogged == "yes") {
+        setTimeout(() => alert(msg), 100); 
+    }
+});
 
 // --- SUCCESSFUL LOGIN (Mula man sa Form o AutoLogin) ---
 socket.on('login_success', (username) => {
   // I-SAVE SA LOCAL STORAGE ANG USERNAME
   localStorage.setItem('game_session', username);
+  localStorage.setItem('is_logged_in', "yes")
 
   authContainer.style.display = 'none';
   gameContainer.style.display = 'inline-block'; 
@@ -119,3 +126,4 @@ let updateGame = () => {
 };
 
 requestAnimationFrame(updateGame);
+localStorage.setItem('is_logged_in', 'no');
