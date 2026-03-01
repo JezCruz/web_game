@@ -126,7 +126,7 @@ io.on('connection', (socket) => {
   socket.on('move', (direction) => {
     if (!players[socket.id]) return; 
 
-    const speed = 10; // 10 
+    const speed = 4; // 10 
     const maxPos = canvasSize - playerSize;
     let player = players[socket.id];
 
