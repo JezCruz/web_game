@@ -10,9 +10,11 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const logoutBtn = document.getElementById('logout-btn');
 const canvas = document.getElementById('gameCanvas');
 
-let isLoginMode = true; 
+let isLoginMode = true;
 let players;
 let currentFood = {};
+let isInGame = false;
+let movements = {up: false, down: false, left: false, right: false}
 
 // --- CHECK LOCAL STORAGE ON PAGE LOAD ---
 const savedUser = localStorage.getItem('game_session');
@@ -59,12 +61,19 @@ socket.on('updateLeaderboard', (topPlayers) => {
   });
 });
 
-socket.on('gameAnnouncement', (msg) => { setTimeout(() => alert(msg), 100); });
+socket.on('gameAnnouncement', (msg) => { 
+    let isLogged = localStorage.getItem('is_logged_in');
+    if (isLogged == "yes") {
+        setTimeout(() => alert(msg), 100); 
+        movements = {up: false, down: false, left: false, right: false};
+    }
+});
 
 // --- SUCCESSFUL LOGIN (Mula man sa Form o AutoLogin) ---
 socket.on('login_success', (username) => {
   // I-SAVE SA LOCAL STORAGE ANG USERNAME
   localStorage.setItem('game_session', username);
+  localStorage.setItem('is_logged_in', "yes")
 
   authContainer.style.display = 'none';
   gameContainer.style.display = 'inline-block'; 
@@ -76,12 +85,36 @@ socket.on('login_success', (username) => {
   });
 
   // Keyboard movement logic
+  setInterval(() => {
+    if (movements.up){ socket.emit('move', 'up'); }
+
+    if (movements.down){ socket.emit('move', 'down'); }
+
+    if (movements.left){ socket.emit('move', 'left'); }
+
+    if (movements.right){ socket.emit('move', 'right'); }
+  }, 15);
+  
+  /*
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowUp' || event.key === 'w') socket.emit('move', 'up');
-    if (event.key === 'ArrowDown' || event.key === 's') socket.emit('move', 'down');
-    if (event.key === 'ArrowLeft' || event.key === 'a') socket.emit('move', 'left');
-    if (event.key === 'ArrowRight' || event.key === 'd') socket.emit('move', 'right');
+    if (event.key === 'ArrowUp' || event.key === 'w'){ socket.emit('move', 'up'); console.log("move up"); }
+    if (event.key === 'ArrowDown' || event.key === 's'){ socket.emit('move', 'down'); console.log("move down"); }
+    if (event.key === 'ArrowLeft' || event.key === 'a'){ socket.emit('move', 'left'); console.log("move left"); }
+    if (event.key === 'ArrowRight' || event.key === 'd'){ socket.emit('move', 'right'); console.log("move right"); }
   });
+  */
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowUp' || event.key === 'w') movements.up = true;
+    if (event.key === 'ArrowDown' || event.key === 's') movements.down = true;
+    if (event.key === 'ArrowLeft' || event.key === 'a') movements.left = true;
+    if (event.key === 'ArrowRight' || event.key === 'd') movements.right = true;
+});
+document.addEventListener('keyup', (event) => {
+    if (event.key === 'ArrowUp' || event.key === 'w') movements.up = false;
+    if (event.key === 'ArrowDown' || event.key === 's') movements.down = false;
+    if (event.key === 'ArrowLeft' || event.key === 'a') movements.left = false;
+    if (event.key === 'ArrowRight' || event.key === 'd') movements.right = false;
 });
 
 let lerpPositions = {}; //Lerping the movements of the players 
@@ -103,7 +136,7 @@ let updateGame = () => {
 			lerpPositions[id] = {x: player.x, y: player.y};
 		}
 
-		let lerpValue = 0.15;
+		let lerpValue = 0.42;
 		lerpPositions[id].x += (player.x - lerpPositions[id].x) * lerpValue;
 		lerpPositions[id].y += (player.y - lerpPositions[id].y) * lerpValue;
 		let finPos = {x: lerpPositions[id].x, y: lerpPositions[id].y} // Final position
@@ -119,3 +152,4 @@ let updateGame = () => {
 };
 
 requestAnimationFrame(updateGame);
+localStorage.setItem('is_logged_in', 'no');
