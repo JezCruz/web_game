@@ -10,6 +10,7 @@ const db = new sqlite3.Database('./game.db', (err) => {
   console.log('Connected to the SQLite database.');
 });
 
+
 // Dinagdag natin ang 'wins' column
 db.run(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,8 +29,11 @@ function broadcastLeaderboard() {
 }
 
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/index.html');
 });
+
+// Load natin yung public static files
+app.use(express.static(__dirname + '/public_static'));
 
 const players = {};
 const playerSize = 25;
@@ -122,7 +126,7 @@ io.on('connection', (socket) => {
   socket.on('move', (direction) => {
     if (!players[socket.id]) return; 
 
-    const speed = 10; 
+    const speed = 10; // 10 
     const maxPos = canvasSize - playerSize;
     let player = players[socket.id];
 
