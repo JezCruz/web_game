@@ -105,13 +105,13 @@ socket.on('login_success', (username) => {
   */
 });
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowUp' || event.key === 'w') movements.up = true;
+    if (event.key === 'ArrowUp' || event.key === 'w' || event.key == ' ') movements.up = true;
     if (event.key === 'ArrowDown' || event.key === 's') movements.down = true;
     if (event.key === 'ArrowLeft' || event.key === 'a') movements.left = true;
     if (event.key === 'ArrowRight' || event.key === 'd') movements.right = true;
 });
 document.addEventListener('keyup', (event) => {
-    if (event.key === 'ArrowUp' || event.key === 'w') movements.up = false;
+    if (event.key === 'ArrowUp' || event.key === 'w' || event.key == ' ') movements.up = false;
     if (event.key === 'ArrowDown' || event.key === 's') movements.down = false;
     if (event.key === 'ArrowLeft' || event.key === 'a') movements.left = false;
     if (event.key === 'ArrowRight' || event.key === 'd') movements.right = false;
